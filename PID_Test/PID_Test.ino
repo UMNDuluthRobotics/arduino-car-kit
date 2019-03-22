@@ -1,5 +1,6 @@
 #include <SoftwareSerial.h>
 #include <Wire.h>
+#include <PID_v1.h>
 int pinLB = 8;                  // pretty sure correct
 int pinLF = 7;                  //pin of controlling diversion----IN2 of motor driver board
 int pinRB = 2;                  //pin of controlling diversion----IN3 of motor driver board
@@ -8,6 +9,14 @@ unsigned char Lpwm_val = 180;   //the speed of left wheel at 180 in initializati
 unsigned char Rpwm_val = 180;   //the speed of right wheel at 180 in initialization
 #define Lpwm_pin  5             //pin of controlling speed---- ENA of motor driver board CORRECT
 #define Rpwm_pin  6           //pin of controlling speed---- ENB of motor driver board
+#define PIN_INPUT pinRF
+#define PIN_OUTPUT Rpwm
+
+double Setpoint, Input, Output;
+
+double Kp = 2, Ki = 5, Kd = 1;
+PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
+
 
 void M_Control_IO_config(void)//initialized function of IO of motor driver
 {
@@ -64,9 +73,21 @@ void setup()
   Set_Speed(Lpwm_val, Rpwm_val); //setting initialization of speed
   stopp();
   Serial.begin(57600);
+
+  Input = analogRead(PIN_INPUT);
+  Setpoint = 100;
+
+  myPID.SetMode(AUTOMATIC);
+  
 }
 
 void loop() { // run over and over
+
+  Input = analogRead(PIN_OUTPUT);
+  myPID.Compute();
+  analogWrite(PIN_OUTPUT, Output);
+
+  
   int data = 0;
   if (Serial.available() > 0) {
     data = Serial.read();
@@ -88,5 +109,8 @@ void loop() { // run over and over
         stopp();
         break;
     }
+  
+
+    
   }
 }
